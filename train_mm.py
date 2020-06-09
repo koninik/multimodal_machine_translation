@@ -70,12 +70,15 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
             desc='  - (Training)   ', leave=False):
 
         # prepare data
-        src_seq, src_pos, tgt_seq, tgt_pos = map(lambda x: x.to(device), batch)
+        print(len(batch))
+        
+        src_seq, src_pos, tgt_seq, tgt_pos, image_features = map(lambda x: x.to(device), batch)
+        print(type(image_features))
         gold = tgt_seq[:, 1:]
 
         # forward
         optimizer.zero_grad()
-        pred = model(src_seq, src_pos, tgt_seq, tgt_pos)
+        pred = model(src_seq, src_pos, tgt_seq, tgt_pos, image_features)
 
         # backward
         loss, n_correct = cal_performance(pred, gold, smoothing=smoothing)

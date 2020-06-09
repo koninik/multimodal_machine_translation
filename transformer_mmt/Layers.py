@@ -1,5 +1,6 @@
 ''' Define the Layers '''
 import torch.nn as nn
+import torch
 from transformer_mmt.SubLayers import MultiHeadAttention, PositionwiseFeedForward
 #from transformer.image_features import load_image_features
 
@@ -39,20 +40,15 @@ class DecoderLayer(nn.Module):
 
     def forward(self, dec_input, enc_output, image_features, non_pad_mask=None, slf_attn_mask=None, dec_enc_attn_mask=None):
         image_features = image_features.unsqueeze(1)
-        enc_output = torch.cat((enc_output, image_features), 2)
+
+        enc_output = torch.cat((enc_output, image_features), 1)
         dec_output, dec_slf_attn = self.slf_attn(
             dec_input, dec_input, dec_input, mask=slf_attn_mask)
         dec_output *= non_pad_mask
-        print(enc_output.shape)
-        print(enc_output.size)
-        print(type(enc_output))
 
         dec_output, dec_enc_attn = self.enc_attn(
             dec_output, enc_output, enc_output, mask=dec_enc_attn_mask)
         dec_output *= non_pad_mask
-        print(enc_output.shape)
-        print(enc_output.size)
-        print(type(enc_output))
 
         dec_output = self.pos_ffn(dec_output)
         dec_output *= non_pad_mask

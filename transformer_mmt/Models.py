@@ -129,7 +129,7 @@ class Decoder(nn.Module):
             DecoderLayer(d_model, d_inner, n_head, d_k, d_v, dropout=dropout)
             for _ in range(n_layers)])
 
-    def forward(self, tgt_seq, tgt_pos, src_seq, enc_output, return_attns=False):
+    def forward(self, tgt_seq, tgt_pos, src_seq, enc_output, image_features, return_attns=False):
 
         dec_slf_attn_list, dec_enc_attn_list = [], []
 
@@ -150,6 +150,7 @@ class Decoder(nn.Module):
         for dec_layer in self.layer_stack:
             dec_output, dec_slf_attn, dec_enc_attn = dec_layer(
                 dec_output, enc_output,
+                image_features=image_features,
                 non_pad_mask=non_pad_mask,
                 slf_attn_mask=slf_attn_mask,
                 dec_enc_attn_mask=dec_enc_attn_mask)
@@ -207,14 +208,14 @@ class Transformer(nn.Module):
             "To share word embedding table, the vocabulary size of src/tgt shall be the same."
             self.encoder.src_word_emb.weight = self.decoder.tgt_word_emb.weight
 
-    def forward(self, src_seq, src_pos, tgt_seq, tgt_pos):
+    def forward(self, src_seq, src_pos, tgt_seq, tgt_pos, image_features):
 
         tgt_seq, tgt_pos = tgt_seq[:, :-1], tgt_pos[:, :-1]
 
         enc_output, *_ = self.encoder(src_seq, src_pos)
         print(src_pos, src_seq)
         print(enc_output.shape)
-        dec_output, *_ = self.decoder(tgt_seq, tgt_pos, src_seq, enc_output)
+        dec_output, *_ = self.decoder(tgt_seq, tgt_pos, src_seq, enc_output, image_features)
         seq_logit = self.tgt_word_prj(dec_output) * self.x_logit_scale
 
         return seq_logit.view(-1, seq_logit.size(2))

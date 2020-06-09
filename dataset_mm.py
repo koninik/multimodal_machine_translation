@@ -10,7 +10,7 @@ def paired_collate_fn(insts):
     tgt_insts = collate_fn(tgt_insts)
     image_features = collate_fn_image(image_features)
     print('im', image_features.shape)
-    return (*src_insts, *tgt_insts, *image_features) 
+    return (*src_insts, *tgt_insts, image_features) 
 
 def collate_fn_image(insts):
 
@@ -18,10 +18,10 @@ def collate_fn_image(insts):
 
     #batch_pos = np.array([[pos_i+1 for pos_i in enumerate(inst)] for inst in batch_seq])
     
-    batch_seq = torch.LongTensor(batch_seq)
+    batch_seq = torch.FloatTensor(batch_seq)
     
     #batch_pos = torch.LongTensor(batch_pos)
-    print('batch', batch_seq.shape)
+    #print('batch', batch_seq.shape)
     return batch_seq
 
 def collate_fn(insts):
@@ -39,8 +39,8 @@ def collate_fn(insts):
 
     batch_seq = torch.LongTensor(batch_seq)
     batch_pos = torch.LongTensor(batch_pos)
-    print(batch_seq.shape)
-    print(batch_pos.shape)
+    #print(batch_seq.shape)
+    #print(batch_pos.shape)
 
     return batch_seq, batch_pos
 
@@ -64,6 +64,7 @@ class TranslationDataset(torch.utils.data.Dataset):
         self._tgt_insts = tgt_insts
 
         self.image_features = image_features
+
     @property
     def n_insts(self):
         ''' Property for dataset size '''

@@ -8,7 +8,7 @@ import numpy as np
 
 from dataset_mm import translate_collate_fn, collate_fn, TranslationDataset
 from transformer_mmt.Translator import Translator
-from preprocess import read_instances_from_file, convert_instance_to_idx_seq
+from preprocess_mm import read_instances_from_file, convert_instance_to_idx_seq
 
 def main():
     '''Main Function'''
@@ -60,9 +60,11 @@ def main():
 
     translator = Translator(opt)
 
+    # self._src_insts[idx], self._tgt_insts[idx], self.image_features[idx]
     with open(opt.output, 'w') as f:
         for batch in tqdm(test_loader, mininterval=2, desc='  - (Test)', leave=False):
-            all_hyp, all_scores = translator.translate_batch(*batch)
+            src_seq, src_pos, image_features = map(lambda x: x.to(translator.device), batch)
+            all_hyp, all_scores = translator.translate_batch(src_seq, src_pos, image_features)
             for idx_seqs in all_hyp:
                 for idx_seq in idx_seqs:
                     pred_line = ' '.join([test_loader.dataset.tgt_idx2word[idx] for idx in idx_seq])

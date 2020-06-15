@@ -12,9 +12,9 @@ class Translator(object):
 
     def __init__(self, opt):
         self.opt = opt
-        self.device = torch.device('cuda' if opt.cuda else 'cpu')
+        self.device = torch.device('cuda' if not opt.no_cuda else 'cpu')
 
-        checkpoint = torch.load(opt.model)
+        checkpoint = torch.load(opt.model, map_location=self.device)
         model_opt = checkpoint['settings']
         self.model_opt = model_opt
         
@@ -47,14 +47,12 @@ class Translator(object):
     def translate_batch(self, src_seq, src_pos, image_features): 
         ''' Translation work in one batch '''
 
-
         def get_inst_idx_to_tensor_position_map(inst_idx_list):
             ''' Indicate the position of an instance in a tensor. '''
             return {inst_idx: tensor_position for tensor_position, inst_idx in enumerate(inst_idx_list)}
 
         def collect_active_part(beamed_tensor, curr_active_inst_idx, n_prev_active_inst, n_bm):
             ''' Collect tensor parts associated to active instances. '''
-
             _, *d_hs = beamed_tensor.size()
             n_curr_active_inst = len(curr_active_inst_idx)
         
@@ -77,6 +75,7 @@ class Translator(object):
             
             active_src_seq = collect_active_part(src_seq, active_inst_idx, n_prev_active_inst, n_bm)
             active_src_enc = collect_active_part(src_enc, active_inst_idx, n_prev_active_inst, n_bm)
+
             #Trying to do the same for the image features to use those for the active sentences
             active_image_features = collect_active_part(image_features, active_inst_idx, n_prev_active_inst, n_bm)
             
@@ -102,7 +101,6 @@ class Translator(object):
                 return dec_partial_pos
 
             def predict_word(dec_seq, dec_pos, src_seq, enc_output, n_active_inst, n_bm):
-                
                 dec_output, *_ = self.model.decoder(dec_seq, dec_pos, src_seq, enc_output, image_features)
                 dec_output = dec_output[:, -1, :]  # Pick the last step: (bh * bm) * d_h
                 word_prob = F.log_softmax(self.model.tgt_word_prj(dec_output), dim=1)
@@ -174,8 +172,7 @@ class Translator(object):
                 if not active_inst_idx_list:
                     break  # all instances have finished their path to <EOS>
 
-                src_seq, src_enc, image_features, inst_idx_to_position_map = collate_active_info(
-                    src_seq, src_enc, image_features, inst_idx_to_position_map, active_inst_idx_list)
+                src_seq, src_enc, inst_idx_to_position_map, image_features = collate_active_info(src_seq, src_enc, image_features, inst_idx_to_position_map, active_inst_idx_list)
 
         batch_hyp, batch_scores = collect_hypothesis_and_scores(inst_dec_beams, self.opt.n_best)
         

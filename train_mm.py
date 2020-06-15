@@ -70,10 +70,10 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
             desc='  - (Training)   ', leave=False):
 
         # prepare data
-        print(len(batch))
+        #print(len(batch))
         
         src_seq, src_pos, tgt_seq, tgt_pos, image_features = map(lambda x: x.to(device), batch)
-        print(type(image_features))
+        #print(type(image_features))
         gold = tgt_seq[:, 1:]
 
         # forward
@@ -114,11 +114,11 @@ def eval_epoch(model, validation_data, device):
                 desc='  - (Validation) ', leave=False):
 
             # prepare data
-            src_seq, src_pos, tgt_seq, tgt_pos = map(lambda x: x.to(device), batch)
+            src_seq, src_pos, tgt_seq, tgt_pos, image_features = map(lambda x: x.to(device), batch)
             gold = tgt_seq[:, 1:]
 
             # forward
-            pred = model(src_seq, src_pos, tgt_seq, tgt_pos)
+            pred = model(src_seq, src_pos, tgt_seq, tgt_pos, image_features)
             loss, n_correct = cal_performance(pred, gold, smoothing=False)
 
             # note keeping
@@ -224,7 +224,8 @@ def main():
     parser.add_argument('-batch_size', type=int, default=64) #128
 
     #parser.add_argument('-d_word_vec', type=int, default=64)
-    parser.add_argument('-d_model', type=int, default=512)
+    parser.add_argument('-d_model', type=int, default=2048)
+    #parser.add_argument('-d_model_decoder', type=int, default=4096)
     parser.add_argument('-d_inner_hid', type=int, default=512)
     parser.add_argument('-d_k', type=int, default=64)
     parser.add_argument('-d_v', type=int, default=64)

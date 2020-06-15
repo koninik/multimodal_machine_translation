@@ -75,16 +75,28 @@ class Encoder(nn.Module):
             EncoderLayer(d_model, d_inner, n_head, d_k, d_v, dropout=dropout)
             for _ in range(n_layers)])
 
-    def forward(self, src_seq, src_pos, return_attns=False):
+        #self.lin_image = nn.Linear(2048, 512)
+
+    def forward(self, src_seq, src_pos, return_attns=False): #add image_features in forward and delete from decoder
 
         enc_slf_attn_list = []
 
         # -- Prepare masks
         slf_attn_mask = get_attn_key_pad_mask(seq_k=src_seq, seq_q=src_seq)
         non_pad_mask = get_non_pad_mask(src_seq)
+        #image_features = self.lin_image(image_features)
 
         # -- Forward
-        enc_output = self.src_word_emb(src_seq) + self.position_enc(src_pos)
+        #TODO
+        #print('self src word emb',self.src_word_emb(src_seq))
+        #print('self src position encoding',self.position_enc(src_pos))
+        #print('image shape', image_features.shape)
+        #image_features = image_features.unsqueeze(1).expand_as(enc_output)
+        enc_output = self.src_word_emb(src_seq) + self.position_enc(src_pos) 
+        #image_features = image_features.unsqueeze(1).expand_as(enc_output)
+        #enc_output = enc_output + image_features
+        #enc_output = torch.cat(([enc_output, image_features], 2))
+        #print('Encoder output shape in Models.py', enc_output.shape)
 
         for enc_layer in self.layer_stack:
             enc_output, enc_slf_attn = enc_layer(
@@ -103,7 +115,7 @@ class Encoder(nn.Module):
         #enc_output --> [batch_size, src_seq, d_model=512]
         #image_features = image_features.unsqueeze(1)
         #enc_output = enc_output.torch.cat(([enc_output, image_features], 2))
-
+        #enc_output = torch.cat(([enc_output, image_features], 2))
         return enc_output,
 
 class Decoder(nn.Module):
@@ -129,7 +141,7 @@ class Decoder(nn.Module):
             DecoderLayer(d_model, d_inner, n_head, d_k, d_v, dropout=dropout)
             for _ in range(n_layers)])
 
-    def forward(self, tgt_seq, tgt_pos, src_seq, enc_output, image_features, return_attns=False):
+    def forward(self, tgt_seq, tgt_pos, src_seq, enc_output, image_features, return_attns=False): #removed image_features
 
         dec_slf_attn_list, dec_enc_attn_list = [], []
 
@@ -144,12 +156,12 @@ class Decoder(nn.Module):
 
         # -- Forward
         #enc_output = enc_output + image_feature
-        #enc_output = torch.cat((image_features.unsqueeze(1), enc_output), 1)
+        #enc_output = torch.cat((image_features.unsqueeze(1), enc_output), 2)
         dec_output = self.tgt_word_emb(tgt_seq) + self.position_enc(tgt_pos)
 
         for dec_layer in self.layer_stack:
             dec_output, dec_slf_attn, dec_enc_attn = dec_layer(
-                dec_output, enc_output,
+                dec_output, enc_output,                   
                 image_features=image_features,
                 non_pad_mask=non_pad_mask,
                 slf_attn_mask=slf_attn_mask,
@@ -213,8 +225,8 @@ class Transformer(nn.Module):
         tgt_seq, tgt_pos = tgt_seq[:, :-1], tgt_pos[:, :-1]
 
         enc_output, *_ = self.encoder(src_seq, src_pos)
-        print(src_pos, src_seq)
-        print(enc_output.shape)
+        #print(src_pos, src_seq)
+        #print(enc_output.shape)
         dec_output, *_ = self.decoder(tgt_seq, tgt_pos, src_seq, enc_output, image_features)
         seq_logit = self.tgt_word_prj(dec_output) * self.x_logit_scale
 

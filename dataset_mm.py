@@ -4,24 +4,29 @@ import torch.utils.data
 
 from transformer_mmt import Constants
 
+
 def paired_collate_fn(insts):
     src_insts, tgt_insts, image_features = list(zip(*insts))
     src_insts = collate_fn(src_insts)
     tgt_insts = collate_fn(tgt_insts)
     image_features = collate_fn_image(image_features)
-    print('im', image_features.shape)
+    
     return (*src_insts, *tgt_insts, image_features) 
+
+def translate_collate_fn(insts):
+    src_insts, image_features = list(zip(*insts))
+    src_insts = collate_fn(src_insts)
+    image_features = collate_fn_image(image_features)
+    
+    return (*src_insts, image_features)
+
 
 def collate_fn_image(insts):
 
     batch_seq = np.array([inst for inst in insts])
 
-    #batch_pos = np.array([[pos_i+1 for pos_i in enumerate(inst)] for inst in batch_seq])
-    
     batch_seq = torch.FloatTensor(batch_seq)
     
-    #batch_pos = torch.LongTensor(batch_pos)
-    #print('batch', batch_seq.shape)
     return batch_seq
 
 def collate_fn(insts):
@@ -39,15 +44,14 @@ def collate_fn(insts):
 
     batch_seq = torch.LongTensor(batch_seq)
     batch_pos = torch.LongTensor(batch_pos)
-    #print(batch_seq.shape)
-    #print(batch_pos.shape)
+
 
     return batch_seq, batch_pos
 
 class TranslationDataset(torch.utils.data.Dataset):
     def __init__(
         self, src_word2idx, tgt_word2idx,
-        image_features, src_insts=None, tgt_insts=None):
+        image_features, src_insts=None, tgt_insts=None):                   
 
         assert src_insts
         assert not tgt_insts or (len(src_insts) == len(tgt_insts))

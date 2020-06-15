@@ -2,7 +2,6 @@
 import torch.nn as nn
 import torch
 from transformer_mmt.SubLayers import MultiHeadAttention, PositionwiseFeedForward
-#from transformer.image_features import load_image_features
 
 
 
@@ -22,11 +21,10 @@ class EncoderLayer(nn.Module):
 
         enc_output = self.pos_ffn(enc_output)
         enc_output *= non_pad_mask
-        #enc_output.shape
-        #enc_output.size
-        #type(enc_output)
 
         return enc_output, enc_slf_attn
+
+
 
 
 class DecoderLayer(nn.Module):
@@ -37,11 +35,15 @@ class DecoderLayer(nn.Module):
         self.slf_attn = MultiHeadAttention(n_head, d_model, d_k, d_v, dropout=dropout)
         self.enc_attn = MultiHeadAttention(n_head, d_model, d_k, d_v, dropout=dropout)
         self.pos_ffn = PositionwiseFeedForward(d_model, d_inner, dropout=dropout)
+        self.lin = nn.Linear(1024, 512)
+        self.lin_image = nn.Linear(2048, 512)
 
     def forward(self, dec_input, enc_output, image_features, non_pad_mask=None, slf_attn_mask=None, dec_enc_attn_mask=None):
-        image_features = image_features.unsqueeze(1)
+        image_features = self.lin_image(image_features)
+        image_features = image_features.unsqueeze(1).expand_as(enc_output)
+        enc_output = torch.cat((enc_output, image_features), 2)
+        enc_output = self.lin(enc_output)
 
-        enc_output = torch.cat((enc_output, image_features), 1)
         dec_output, dec_slf_attn = self.slf_attn(
             dec_input, dec_input, dec_input, mask=slf_attn_mask)
         dec_output *= non_pad_mask

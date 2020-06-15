@@ -4,15 +4,16 @@ import torch
 import torch.utils.data
 import argparse
 from tqdm import tqdm
+import numpy as np
 
-from dataset import collate_fn, TranslationDataset
+from dataset_mm import translate_collate_fn, collate_fn, TranslationDataset
 from transformer_mmt.Translator import Translator
 from preprocess import read_instances_from_file, convert_instance_to_idx_seq
 
 def main():
     '''Main Function'''
 
-    parser = argparse.ArgumentParser(description='translate.py')
+    parser = argparse.ArgumentParser(description='translate_mm.py')
 
     parser.add_argument('-model', required=True,
                         help='Path to model .pt file')
@@ -20,10 +21,11 @@ def main():
                         help='Source sequence to decode (one line per sequence)')
     parser.add_argument('-vocab', required=True,
                         help='Source sequence to decode (one line per sequence)')
+    parser.add_argument('-test_image_feat', required=True)
     parser.add_argument('-output', default='pred.txt',
                         help="""Path to output the predictions (each line will
                         be the decoded sequence""")
-    parser.add_argument('-beam_size', type=int, default=5,
+    parser.add_argument('-beam_size', type=int, default=1,
                         help='Beam size')
     parser.add_argument('-batch_size', type=int, default=30,
                         help='Batch size')
@@ -38,6 +40,7 @@ def main():
     # Prepare DataLoader
     preprocess_data = torch.load(opt.vocab)
     preprocess_settings = preprocess_data['settings']
+    test_image_feat = np.load(opt.test_image_feat)
     test_src_word_insts = read_instances_from_file(
         opt.src,
         preprocess_settings.max_word_seq_len,
@@ -49,10 +52,11 @@ def main():
         TranslationDataset(
             src_word2idx=preprocess_data['dict']['src'],
             tgt_word2idx=preprocess_data['dict']['tgt'],
+            image_features=test_image_feat,
             src_insts=test_src_insts),
         num_workers=2,
         batch_size=opt.batch_size,
-        collate_fn=collate_fn)
+        collate_fn=translate_collate_fn)
 
     translator = Translator(opt)
 

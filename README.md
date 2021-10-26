@@ -6,7 +6,11 @@
    
   
   # Training
-  ```python train_mm.py -data /path/to/text/data -train_image_feat /path/to/train/image/features -val_image_feat /path/to/validation/image/features```
+  ```bash
+  python train_mm.py -data /path/to/text/data -train_image_feat /path/to/train/image/features -val_image_feat /path/to/validation/image/features
+  ```
  
   # Translate
-  ```python translate_mm.py -model /path/to/model/chkpt -src /path/to/source/sentences -vocab /path/to/source/vocabulary -test_image_feat /path/to/test/image/features```
+  ```bash
+  python translate_mm.py -model /path/to/model/chkpt -src /path/to/source/sentences -vocab /path/to/source/vocabulary -test_image_feat /path/to/test/image/features
+  ```

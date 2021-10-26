@@ -80,14 +80,14 @@ def main():
     parser.add_argument('-share_vocab', action='store_true')
     parser.add_argument('-vocab', default=None)
 
-    opt = parser.parse_args()
-    opt.max_token_seq_len = opt.max_word_seq_len + 2 # include the <s> and </s>
+    args = parser.parse_args()
+    args.max_token_seq_len = args.max_word_seq_len + 2 # include the <s> and </s>
 
     # Training set
     train_src_word_insts = read_instances_from_file(
-        opt.train_src, opt.max_word_seq_len, opt.keep_case)
+        args.train_src, args.max_word_seq_len, args.keep_case)
     train_tgt_word_insts = read_instances_from_file(
-        opt.train_tgt, opt.max_word_seq_len, opt.keep_case)
+        args.train_tgt, args.max_word_seq_len, args.keep_case)
 
     if len(train_src_word_insts) != len(train_tgt_word_insts):
         print('[Warning] The training instance count is not equal.')
@@ -101,9 +101,9 @@ def main():
 
     # Validation set
     valid_src_word_insts = read_instances_from_file(
-        opt.valid_src, opt.max_word_seq_len, opt.keep_case)
+        args.valid_src, args.max_word_seq_len, args.keep_case)
     valid_tgt_word_insts = read_instances_from_file(
-        opt.valid_tgt, opt.max_word_seq_len, opt.keep_case)
+        args.valid_tgt, args.max_word_seq_len, args.keep_case)
 
     if len(valid_src_word_insts) != len(valid_tgt_word_insts):
         print('[Warning] The validation instance count is not equal.')
@@ -116,24 +116,24 @@ def main():
         (s, t) for s, t in zip(valid_src_word_insts, valid_tgt_word_insts) if s and t]))
 
     # Build vocabulary
-    if opt.vocab:
-        predefined_data = torch.load(opt.vocab)
+    if args.vocab:
+        predefined_data = torch.load(args.vocab)
         assert 'dict' in predefined_data
 
         print('[Info] Pre-defined vocabulary found.')
         src_word2idx = predefined_data['dict']['src']
         tgt_word2idx = predefined_data['dict']['tgt']
     else:
-        if opt.share_vocab:
+        if args.share_vocab:
             print('[Info] Build shared vocabulary for source and target.')
             word2idx = build_vocab_idx(
-                train_src_word_insts + train_tgt_word_insts, opt.min_word_count)
+                train_src_word_insts + train_tgt_word_insts, args.min_word_count)
             src_word2idx = tgt_word2idx = word2idx
         else:
             print('[Info] Build vocabulary for source.')
-            src_word2idx = build_vocab_idx(train_src_word_insts, opt.min_word_count)
+            src_word2idx = build_vocab_idx(train_src_word_insts, args.min_word_count)
             print('[Info] Build vocabulary for target.')
-            tgt_word2idx = build_vocab_idx(train_tgt_word_insts, opt.min_word_count)
+            tgt_word2idx = build_vocab_idx(train_tgt_word_insts, args.min_word_count)
 
     # word to index
     print('[Info] Convert source word instances into sequences of word index.')
@@ -156,8 +156,8 @@ def main():
             'src': valid_src_insts,
             'tgt': valid_tgt_insts}}
 
-    print('[Info] Dumping the processed data to pickle file', opt.save_data)
-    torch.save(data, opt.save_data)
+    print('[Info] Dumping the processed data to pickle file', args.save_data)
+    torch.save(data, args.save_data)
     print('[Info] Finish.')
 
 if __name__ == '__main__':

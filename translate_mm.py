@@ -34,15 +34,15 @@ def main():
                         decoded sentences""")
     parser.add_argument('-no_cuda', action='store_true')
 
-    opt = parser.parse_args()
-    opt.cuda = not opt.no_cuda
+    args = parser.parse_args()
+    args.cuda = not args.no_cuda
 
     # Prepare DataLoader
-    preprocess_data = torch.load(opt.vocab)
+    preprocess_data = torch.load(args.vocab)
     preprocess_settings = preprocess_data['settings']
-    test_image_feat = np.load(opt.test_image_feat)
+    test_image_feat = np.load(args.test_image_feat)
     test_src_word_insts = read_instances_from_file(
-        opt.src,
+        args.src,
         preprocess_settings.max_word_seq_len,
         preprocess_settings.keep_case)
     test_src_insts = convert_instance_to_idx_seq(
@@ -55,13 +55,13 @@ def main():
             image_features=test_image_feat,
             src_insts=test_src_insts),
         num_workers=2,
-        batch_size=opt.batch_size,
+        batch_size=args.batch_size,
         collate_fn=translate_collate_fn)
 
     translator = Translator(opt)
 
     # self._src_insts[idx], self._tgt_insts[idx], self.image_features[idx]
-    with open(opt.output, 'w') as f:
+    with open(args.output, 'w') as f:
         for batch in tqdm(test_loader, mininterval=2, desc='  - (Test)', leave=False):
             src_seq, src_pos, image_features = map(lambda x: x.to(translator.device), batch)
             all_hyp, all_scores = translator.translate_batch(src_seq, src_pos, image_features)
